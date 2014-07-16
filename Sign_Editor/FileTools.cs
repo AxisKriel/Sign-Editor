@@ -60,7 +60,8 @@ namespace Sign_Editor
 			foreach (var file in files)
 			{
 				info = new FileInfo(file);
-				list.Add(info.Name);
+				if (info.Extension == ".txt")
+					list.Add(info.Name);
 			}
 			return list;
 		}

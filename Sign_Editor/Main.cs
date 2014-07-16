@@ -86,7 +86,13 @@ namespace Sign_Editor
 				AllowServer = false,
 				HelpDesc = Help.Save
 			});
-			Commands.ChatCommands.Add(new Command(new List<string>() { Permissions.Load, Permissions.Save },
+			Commands.ChatCommands.Add(new Command(
+				new List<string>()
+				{
+					Permissions.Load,
+					Permissions.Save,
+					Permissions.Clipboard
+				},
 				DoSignClear, "signclear", "sclear")
 				{
 					AllowServer = false,
