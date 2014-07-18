@@ -114,6 +114,8 @@ namespace Sign_Editor
 			#endregion
 			if (!FileTools.CheckDir(FileTools.DirPath))
 				Log.ConsoleInfo("Created Sign Editor directory.");
+			if (Utils.UseInfiniteSigns)
+				Utils.DbConnect();
 		}
 		#endregion
 
