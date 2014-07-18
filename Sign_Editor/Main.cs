@@ -1,12 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.IO;
+
+using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
-using Terraria;
-using System.IO;
 
 namespace Sign_Editor
 {
@@ -137,13 +135,28 @@ namespace Sign_Editor
 			if (args.MsgId == PacketTypes.SignNew && Memory[ply].Active)
 			{
 				int signID = args.number;
-				var sign = Main.sign[signID];
+				var sign = Utils.UseInfiniteSigns ?
+					Utils.DbGetSign((int)args.number2, (int)args.number3) :
+					Main.sign[signID];
 				if (sign != null)
 				{
 					switch (Memory[ply].Action)
 					{
 						case SignAction.LOAD:
-							sign.text = FileTools.Load(Memory[ply].File);
+							if (Utils.UseInfiniteSigns)
+							{
+								var text = FileTools.Load(Memory[ply].File);
+								if (!Utils.DbSetSignText(sign.x, sign.y, text))
+								{
+									TShock.Players[ply].SendErrorMessage(
+										"Failed to load to InfiniteSigns sign.");
+									break;
+								}
+							}
+							else
+							{
+								sign.text = FileTools.Load(Memory[ply].File);
+							}
 							TShock.Players[ply].SendInfoMessage(String.Format(
 								"Loaded file '{0}' to sign.", Memory[ply].File));
 							break;
@@ -166,7 +179,20 @@ namespace Sign_Editor
 							break;
 						case SignAction.PASTE:
 						case SignAction.PERSISTENT:
-							sign.text = Memory[ply].Clipboard;
+							if (Utils.UseInfiniteSigns)
+							{
+								var text = Memory[ply].Clipboard;
+								if (!Utils.DbSetSignText(sign.x, sign.y, text))
+								{
+									TShock.Players[ply].SendErrorMessage(
+										"Failed to paste to InfiniteSigns sign.");
+									break;
+								}
+							}
+							else
+							{
+								sign.text = Memory[ply].Clipboard;
+							}
 							TShock.Players[ply].SendInfoMessage(
 								"Pasted selection.");
 							break;
