@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 
 using Terraria;
 using TerrariaApi.Server;
@@ -61,11 +62,15 @@ namespace Sign_Editor
 
 		#region Variables
 		SMemory[] Memory = new SMemory[Main.maxPlayers];
+		bool UsingInfiniteSigns;
 		#endregion
 
 		#region Initialize
 		public override void Initialize()
 		{
+			UsingInfiniteSigns = ServerApi.Plugins.FirstOrDefault(
+				p => p.Plugin.Name.Equals(
+					"InfiniteSigns", StringComparison.InvariantCulture)) != null;
 			#region Hooks
 			ServerApi.Hooks.NetSendData.Register(this, OnSendData);
 			#endregion
@@ -114,8 +119,11 @@ namespace Sign_Editor
 			#endregion
 			if (!FileTools.CheckDir(FileTools.DirPath))
 				Log.ConsoleInfo("Created Sign Editor directory.");
-			if (Utils.UseInfiniteSigns)
+			if (UsingInfiniteSigns)
 				Utils.DbConnect();
+
+			Commands.ChatCommands.Add(new Command(DoPlugins, "plugins"));
+			Commands.ChatCommands.Add(new Command(AmIUsingIS, "checkis"));
 		}
 		#endregion
 
@@ -137,15 +145,17 @@ namespace Sign_Editor
 			if (args.MsgId == PacketTypes.SignNew && Memory[ply].Active)
 			{
 				int signID = args.number;
-				var sign = Utils.UseInfiniteSigns ?
+				var sign = UsingInfiniteSigns ?
 					Utils.DbGetSign((int)args.number2, (int)args.number3) :
 					Main.sign[signID];
+				if (sign == null)
+					Log.ConsoleError("Utils.DbGetSign(int x, int y) returned null.");
 				if (sign != null)
 				{
 					switch (Memory[ply].Action)
 					{
 						case SignAction.LOAD:
-							if (Utils.UseInfiniteSigns)
+							if (UsingInfiniteSigns)
 							{
 								var text = FileTools.Load(Memory[ply].File);
 								if (!Utils.DbSetSignText(sign.x, sign.y, text))
@@ -181,7 +191,7 @@ namespace Sign_Editor
 							break;
 						case SignAction.PASTE:
 						case SignAction.PERSISTENT:
-							if (Utils.UseInfiniteSigns)
+							if (UsingInfiniteSigns)
 							{
 								var text = Memory[ply].Clipboard;
 								if (!Utils.DbSetSignText(sign.x, sign.y, text))
@@ -356,5 +366,18 @@ namespace Sign_Editor
 				});
 		}
 		#endregion
+
+		void DoPlugins(CommandArgs args)
+		{
+			var plugins = ServerApi.Plugins.Select(p => p.Plugin.Name).ToList();
+			string str = String.Join(", ", plugins);
+			args.Player.SendMessage("List of available plugins: " + str, Color.Yellow);
+		}
+
+		void AmIUsingIS(CommandArgs args)
+		{
+			args.Player.SendInfoMessage(String.Format(
+				"UsingInfiniteSigns: {0}", UsingInfiniteSigns));
+		}
 	}
 }

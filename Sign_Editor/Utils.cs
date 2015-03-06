@@ -14,23 +14,14 @@ namespace Sign_Editor
 	public class Utils 
 	{
 		private static IDbConnection db;
-		public static bool UseInfiniteSigns
-		{
-			get
-			{
-				var infiniteSigns = ServerApi.Plugins.FirstOrDefault(
-					p => p.Plugin.Name == "InfiniteSigns");
-				return infiniteSigns == null ? false : true;
-			}
-		}
 
 		public static bool DbConnect()
 		{
 			try
 			{
-				switch (TShock.DB.GetSqlType())
+				switch (TShock.Config.StorageType.ToLower())
 				{
-					case SqlType.Mysql:
+					case "mysql":
 						string[] host = TShock.Config.MySqlHost.Split(':');
 						db = new MySqlConnection()
 						{
@@ -42,7 +33,7 @@ namespace Sign_Editor
 								TShock.Config.MySqlPassword)
 						};
 						break;
-					case SqlType.Sqlite:
+					case "sqlite":
 						var path = Path.Combine(TShock.SavePath, "signs.sqlite");
 						db = new SqliteConnection(String.Format("uri=file://{0},Version=3", path));
 						break;
@@ -59,28 +50,44 @@ namespace Sign_Editor
 
 		public static Sign DbGetSign(int x, int y)
 		{
-			Sign sign = null;
-			string query = "SELECT Text FROM Signs WHERE X=@0 AND Y=@1 AND WorldID=@2;";
-			using (var reader = db.QueryReader(query, x, y, Main.worldID))
+			try
 			{
-				while (reader.Read())
+				Sign sign = null;
+				string query = "SELECT Text FROM Signs WHERE X=@0 AND Y=@1 AND WorldID=@2;";
+				using (var reader = db.QueryReader(query, x, y, Main.worldID))
 				{
-					sign = new Sign()
+					while (reader.Read())
 					{
-						x = x,
-						y = y,
-						text = reader.Get<string>("Text")
-					};
+						sign = new Sign()
+						{
+							x = x,
+							y = y,
+							text = reader.Get<string>("Text")
+						};
+					}
 				}
+				return sign;
 			}
-			return sign;
+			catch (Exception ex)
+			{
+				Log.ConsoleError(ex.ToString());
+				return null;
+			}
 		}
 
 		public static bool DbSetSignText(int x, int y, string text)
 		{
-			string query = "UPDATE Signs SET Text=@0 WHERE X=@1 AND Y=@2 AND WorldID=@3;";
-			if (db.Query(query, text, x, y, Main.worldID) != 1)
+			try
 			{
+				string query = "UPDATE Signs SET Text=@0 WHERE X=@1 AND Y=@2 AND WorldID=@3;";
+				if (db.Query(query, text, x, y, Main.worldID) != 1)
+				{
+					return false;
+				}
+			}
+			catch (Exception ex)
+			{
+				Log.ConsoleError(ex.ToString());
 				return false;
 			}
 			return true;
