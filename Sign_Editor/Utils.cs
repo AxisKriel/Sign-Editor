@@ -41,8 +41,9 @@ namespace Sign_Editor
 			}
 			catch (Exception ex)
 			{
-				Log.ConsoleError("An exception has occured while attempting to connect to the sign database: {0}",
+				TShock.Log.ConsoleError("An exception has occured while attempting to connect to the sign database: {0}",
 					ex.Message);
+				TShock.Log.Error(ex.ToString());
 				return false;
 			}
 			return true;
@@ -70,7 +71,7 @@ namespace Sign_Editor
 			}
 			catch (Exception ex)
 			{
-				Log.ConsoleError(ex.ToString());
+				TShock.Log.ConsoleError(ex.ToString());
 				return null;
 			}
 		}
@@ -80,17 +81,13 @@ namespace Sign_Editor
 			try
 			{
 				string query = "UPDATE Signs SET Text=@0 WHERE X=@1 AND Y=@2 AND WorldID=@3;";
-				if (db.Query(query, text, x, y, Main.worldID) != 1)
-				{
-					return false;
-				}
+				return db.Query(query, text, x, y, Main.worldID) > 0;
 			}
 			catch (Exception ex)
 			{
-				Log.ConsoleError(ex.ToString());
+				TShock.Log.ConsoleError(ex.ToString());
 				return false;
 			}
-			return true;
 		}
 	}
 }

@@ -44,7 +44,7 @@ namespace Sign_Editor
 			}
 			catch (Exception ex)
 			{
-				Log.ConsoleError(ex.ToString());
+				TShock.Log.ConsoleError(ex.ToString());
 				return false;
 			}
 			return true;

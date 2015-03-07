@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 
 namespace Sign_Editor
 {
@@ -17,7 +18,7 @@ namespace Sign_Editor
 			}
 			set
 			{
-				if (!System.IO.Path.HasExtension(value))
+				if (!Path.HasExtension(value))
 				{
 					_file = value + ".txt";
 				}

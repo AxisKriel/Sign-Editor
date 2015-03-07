@@ -9,17 +9,15 @@ using TShockAPI;
 
 namespace Sign_Editor
 {
-	[ApiVersion(1, 16)]
+	[ApiVersion(1, 17)]
     public class SignEditor : TerrariaPlugin
 	{
-		#region Plugin Info
 		public SignEditor(Main game)
 			: base(game)
 		{
-			Order++;
+			Order = 2;
 		}
 
-		#region Version
 		public override Version Version
 		{
 			get
@@ -27,9 +25,7 @@ namespace Sign_Editor
 				return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 			}
 		}
-		#endregion
 
-		#region Name
 		public override string Name
 		{
 			get
@@ -37,9 +33,7 @@ namespace Sign_Editor
 				return "Sign Editor";
 			}
 		}
-		#endregion
 
-		#region Author
 		public override string Author
 		{
 			get
@@ -47,9 +41,7 @@ namespace Sign_Editor
 				return "Enerdy";
 			}
 		}
-		#endregion
 
-		#region Description
 		public override string Description
 		{
 			get
@@ -57,38 +49,36 @@ namespace Sign_Editor
 				return "Load and save sign content to text files.";
 			}
 		}
-		#endregion
-		#endregion
 
-		#region Variables
 		SMemory[] Memory = new SMemory[Main.maxPlayers];
 		bool UsingInfiniteSigns;
-		#endregion
 
-		#region Initialize
 		public override void Initialize()
 		{
-			UsingInfiniteSigns = ServerApi.Plugins.FirstOrDefault(
-				p => p.Plugin.Name.Equals(
-					"InfiniteSigns", StringComparison.InvariantCulture)) != null;
-			#region Hooks
-			ServerApi.Hooks.NetSendData.Register(this, OnSendData);
-			#endregion
+			UsingInfiniteSigns = ServerApi.Plugins.Any(p =>
+				p.Plugin.Name.Equals("InfiniteSigns", StringComparison.InvariantCulture));
+
+			ServerApi.Hooks.NetGetData.Register(this, OnGetData);
+
 			#region Commands
+
 			Commands.ChatCommands.Add(new Command(Permissions.Info, DoSignInfo, "sign")
 			{
 				HelpDesc = Help.Info
 			});
+
 			Commands.ChatCommands.Add(new Command(Permissions.Load, DoSignLoad, "signload", "sload")
 			{
 				AllowServer = false,
 				HelpDesc = Help.Load
 			});
+
 			Commands.ChatCommands.Add(new Command(Permissions.Save, DoSignSave, "signsave", "ssave")
 			{
 				AllowServer = false,
 				HelpDesc = Help.Save
 			});
+
 			Commands.ChatCommands.Add(new Command(
 				new List<string>()
 				{
@@ -101,122 +91,123 @@ namespace Sign_Editor
 					AllowServer = false,
 					HelpText = "Cancels the current sign action and empties the clipboard."
 				});
+
 			Commands.ChatCommands.Add(new Command(Permissions.Clipboard, DoSignCopy, "signcopy", "scopy")
 			{
 				AllowServer = false,
 				HelpDesc = Help.Copy
 			});
+
 			Commands.ChatCommands.Add(new Command(Permissions.Clipboard, DoSignPaste, "signpaste", "spaste")
 			{
 				AllowServer = false,
 				HelpDesc = Help.Paste
 			});
+
 			Commands.ChatCommands.Add(new Command(Permissions.Files, DoSignFiles, "signfiles", "sfiles")
 			{
 				AllowServer = false,
 				HelpText = "Returns a list of all valid files for reading inside the Sign Editor folder."
 			});
+
 			#endregion
+
 			if (!FileTools.CheckDir(FileTools.DirPath))
-				Log.ConsoleInfo("Created Sign Editor directory.");
+				TShock.Log.ConsoleInfo("Created Sign Editor directory.");
 			if (UsingInfiniteSigns)
 				Utils.DbConnect();
 
-			Commands.ChatCommands.Add(new Command(DoPlugins, "plugins"));
-			Commands.ChatCommands.Add(new Command(AmIUsingIS, "checkis"));
+			// Debug command to check if InfiniteSigns is in use
+			//Commands.ChatCommands.Add(new Command(AmIUsingIS, "checkis"));
 		}
-		#endregion
 
-		#region Dispose
 		protected override void Dispose(bool disposing)
 		{
 			if (disposing)
 			{
-				ServerApi.Hooks.NetSendData.Deregister(this, OnSendData);
+				ServerApi.Hooks.NetGetData.Deregister(this, OnGetData);
 			}
-			base.Dispose(disposing);
 		}
-		#endregion
 
-		#region OnSendData
-		void OnSendData(SendDataEventArgs args)
+		void OnGetData(GetDataEventArgs args)
 		{
-			var ply = args.remoteClient;
-			if (args.MsgId == PacketTypes.SignNew && Memory[ply].Active)
+			var ply = args.Msg.whoAmI;
+			if (args.MsgID == PacketTypes.SignRead && Memory[ply].Active)
 			{
-				int signID = args.number;
-				var sign = UsingInfiniteSigns ?
-					Utils.DbGetSign((int)args.number2, (int)args.number3) :
-					Main.sign[signID];
-				if (sign == null)
-					Log.ConsoleError("Utils.DbGetSign(int x, int y) returned null.");
-				if (sign != null)
+				using (var reader = new BinaryReader(new MemoryStream(args.Msg.readBuffer, args.Index, args.Length)))
 				{
-					switch (Memory[ply].Action)
+					int x = reader.ReadInt16();
+					int y = reader.ReadInt16();
+					int signID = Sign.ReadSign(x, y);
+
+					Sign sign = UsingInfiniteSigns ? Utils.DbGetSign((int)x, (int)y) : Main.sign[signID];
+					if (sign == null)
+						TShock.Log.Debug("Utils.DbGetSign(int x, int y) returned null.");
+					else
 					{
-						case SignAction.LOAD:
-							if (UsingInfiniteSigns)
-							{
-								var text = FileTools.Load(Memory[ply].File);
-								if (!Utils.DbSetSignText(sign.x, sign.y, text))
+						switch (Memory[ply].Action)
+						{
+							case SignAction.LOAD:
+								if (UsingInfiniteSigns)
 								{
-									TShock.Players[ply].SendErrorMessage(
-										"Failed to load to InfiniteSigns sign.");
-									break;
+									var text = FileTools.Load(Memory[ply].File);
+									if (!Utils.DbSetSignText(sign.x, sign.y, text))
+									{
+										TShock.Players[ply].SendErrorMessage(
+											"Failed to load to InfiniteSigns sign.");
+										break;
+									}
 								}
-							}
-							else
-							{
-								sign.text = FileTools.Load(Memory[ply].File);
-							}
-							TShock.Players[ply].SendInfoMessage(String.Format(
-								"Loaded file '{0}' to sign.", Memory[ply].File));
-							break;
-						case SignAction.SAVE:
-							if (FileTools.Save(Memory[ply].File, sign.text))
-							{
+								else
+								{
+									Sign.TextSign(signID, FileTools.Load(Memory[ply].File));
+								}
 								TShock.Players[ply].SendInfoMessage(String.Format(
-									"Saved sign's contents to file '{0}'.", Memory[ply].File));
-							}
-							else
-							{
-								TShock.Players[ply].SendErrorMessage(
-									"Failed to save to file. Check logs for details.");
-							}
-							break;
-						case SignAction.COPY:
-							Memory[ply].Clipboard = sign.text;
-							TShock.Players[ply].SendInfoMessage(
-								"Copied sign's contents to clipboard.");
-							break;
-						case SignAction.PASTE:
-						case SignAction.PERSISTENT:
-							if (UsingInfiniteSigns)
-							{
-								var text = Memory[ply].Clipboard;
-								if (!Utils.DbSetSignText(sign.x, sign.y, text))
+									"Loaded file '{0}' to sign.", Memory[ply].File));
+								break;
+							case SignAction.SAVE:
+								if (FileTools.Save(Memory[ply].File, sign.text))
+								{
+									TShock.Players[ply].SendInfoMessage(String.Format(
+										"Saved sign's contents to file '{0}'.", Memory[ply].File));
+								}
+								else
 								{
 									TShock.Players[ply].SendErrorMessage(
-										"Failed to paste to InfiniteSigns sign.");
-									break;
+										"Failed to save to file. Check logs for details.");
 								}
-							}
-							else
-							{
-								sign.text = Memory[ply].Clipboard;
-							}
-							TShock.Players[ply].SendInfoMessage(
-								"Pasted selection.");
-							break;
+								break;
+							case SignAction.COPY:
+								Memory[ply].Clipboard = sign.text;
+								TShock.Players[ply].SendInfoMessage(
+									"Copied sign's contents to clipboard.");
+								break;
+							case SignAction.PASTE:
+							case SignAction.PERSISTENT:
+								if (UsingInfiniteSigns)
+								{
+									var text = Memory[ply].Clipboard;
+									if (!Utils.DbSetSignText(sign.x, sign.y, text))
+									{
+										TShock.Players[ply].SendErrorMessage(
+											"Failed to paste to InfiniteSigns sign.");
+										break;
+									}
+								}
+								else
+								{
+									Sign.TextSign(signID, Memory[ply].Clipboard);
+								}
+								TShock.Players[ply].SendInfoMessage("Pasted selection.");
+								break;
+						}
+						Memory[ply].Active = Memory[ply].Action == SignAction.PERSISTENT;
+						args.Handled = true;
 					}
-					Memory[ply].Active = Memory[ply].Action == SignAction.PERSISTENT ? true : false;
-					args.Handled = true;
 				}
 			}
 		}
-		#endregion
 
-		#region DoSignInfo Command
 		void DoSignInfo(CommandArgs args)
 		{
 			int pageNumber;
@@ -228,37 +219,24 @@ namespace Sign_Editor
 				new PaginationTools.Settings()
 				{
 					IncludeHeader = false,
-					FooterFormat = "Type /sign {0} for more info."
+					FooterFormat = "Type {0}sign {{0}} for more info.".SFormat(Commands.Specifier)
 				});
 		}
-		#endregion
 
-		#region Join Helper Method
-		/// <summary>
-		/// Alias for String.Join
-		/// </summary>
-		string Join(IEnumerable<string> args)
-		{
-			string s;
-			s = String.Join(" ", args);
-			return s;
-		}
-		#endregion
-
-		#region DoSignLoad Command
 		void DoSignLoad(CommandArgs args)
 		{
 			var count = args.Parameters.Count;
 			if (count == 0)
 			{
 				args.Player.SendInfoMessage(
-						"Usage: /signload <filename>. Type /help signload for more info.");
+						"Usage: {0}signload <filename>. Type {0}help signload for more info.",
+						Commands.Specifier);
 			}
 			else
 			{
 				var i = args.Player.Index;
 				Memory[i].Action = SignAction.LOAD;
-				Memory[i].File = Join(args.Parameters);
+				Memory[i].File = string.Join(" ", args.Parameters);
 				var test = Path.Combine(FileTools.DirPath, Memory[i].File);
 				if (!File.Exists(test))
 				{
@@ -269,38 +247,33 @@ namespace Sign_Editor
 				args.Player.SendInfoMessage("Loading from file. Read a sign to continue.");
 			}
 		}
-		#endregion
 
-		#region DoSignSave Command
 		void DoSignSave(CommandArgs args)
 		{
 			var count = args.Parameters.Count;
 			if (count == 0)
 			{
 				args.Player.SendInfoMessage(
-					"Usage: /signsave <filename>. Type /help signsave for more info.");
+					"Usage: {0}signsave <filename>. Type {0}help signsave for more info.",
+					Commands.Specifier);
 			}
 			else
 			{
 				var i = args.Player.Index;
 				Memory[i].Action = SignAction.SAVE;
 				Memory[i].Active = true;
-				Memory[i].File = Join(args.Parameters);
+				Memory[i].File = string.Join(" ", args.Parameters);
 				args.Player.SendInfoMessage("Saving to file. Read a sign to continue.");
 			}
 		}
-		#endregion
 
-		#region DoSignClear Command
 		void DoSignClear(CommandArgs args)
 		{
 			Memory[args.Player.Index].Active = false;
 			Memory[args.Player.Index].Clipboard = String.Empty;
 			args.Player.SendInfoMessage("Cleared sign action and clipboard.");
 		}
-		#endregion
 
-		#region DoSignCopy Command
 		void DoSignCopy(CommandArgs args)
 		{
 			var i = args.Player.Index;
@@ -308,9 +281,7 @@ namespace Sign_Editor
 			Memory[i].Active = true;
 			args.Player.SendInfoMessage("Copying to clipboard. Read a sign to continue.");
 		}
-		#endregion
 
-		#region DoSignPaste Command
 		void DoSignPaste(CommandArgs args)
 		{
 			var i = args.Player.Index;
@@ -340,19 +311,18 @@ namespace Sign_Editor
 			{
 				Memory[i].Action = SignAction.PASTE;
 			}
-			args.Player.SendInfoMessage(String.Format(
-				"Pasting from clipboard{0}. Read a sign to continue.", mode));
+			args.Player.SendInfoMessage(
+				"Pasting from clipboard{0}. Read a sign to continue.", mode);
 			if (!String.IsNullOrEmpty(mode))
-				args.Player.SendInfoMessage("Type /signpaste again to cancel persistent mode.");
+				args.Player.SendInfoMessage(
+					"Type {0}signpaste again to cancel persistent mode.", Commands.Specifier);
 		}
-		#endregion
 
-		#region DoSignFiles Command
 		void DoSignFiles(CommandArgs args)
 		{
 			int pageNumber;
 			var files = FileTools.ListFiles();
-			var lines = PaginationTools.BuildLinesFromTerms(files, null, ", ");
+			var lines = PaginationTools.BuildLinesFromTerms(files);
 			if (!PaginationTools.TryParsePageNumber(args.Parameters, 0, args.Player, out pageNumber))
 			{
 				pageNumber = 1;
@@ -361,23 +331,14 @@ namespace Sign_Editor
 				new PaginationTools.Settings()
 				{
 					HeaderFormat = "Available Files ({0}/{1}):",
-					FooterFormat = "Type /signfiles {0} for more files.",
+					FooterFormat = "Type {0}signfiles {{0}} for more files.".SFormat(Commands.Specifier),
 					NothingToDisplayString = "No files available."
 				});
-		}
-		#endregion
-
-		void DoPlugins(CommandArgs args)
-		{
-			var plugins = ServerApi.Plugins.Select(p => p.Plugin.Name).ToList();
-			string str = String.Join(", ", plugins);
-			args.Player.SendMessage("List of available plugins: " + str, Color.Yellow);
 		}
 
 		void AmIUsingIS(CommandArgs args)
 		{
-			args.Player.SendInfoMessage(String.Format(
-				"UsingInfiniteSigns: {0}", UsingInfiniteSigns));
+			args.Player.SendInfoMessage("UsingInfiniteSigns: {0}", UsingInfiniteSigns);
 		}
 	}
 }
