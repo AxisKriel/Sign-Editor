@@ -3,37 +3,16 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
+using Sign_Editor.Extensions;
 using Terraria;
 using TerrariaApi.Server;
 using TShockAPI;
 
 namespace Sign_Editor
 {
-	[ApiVersion(1, 17)]
-    public class SignEditor : TerrariaPlugin
+	[ApiVersion(1, 19)]
+	public class SignEditor : TerrariaPlugin
 	{
-		public SignEditor(Main game)
-			: base(game)
-		{
-			Order = 2;
-		}
-
-		public override Version Version
-		{
-			get
-			{
-				return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-			}
-		}
-
-		public override string Name
-		{
-			get
-			{
-				return "Sign Editor";
-			}
-		}
-
 		public override string Author
 		{
 			get
@@ -48,6 +27,28 @@ namespace Sign_Editor
 			{
 				return "Load and save sign content to text files.";
 			}
+		}
+
+		public override string Name
+		{
+			get
+			{
+				return "Sign Editor";
+			}
+		}
+
+		public override Version Version
+		{
+			get
+			{
+				return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
+			}
+		}
+
+		public SignEditor(Main game)
+			: base(game)
+		{
+			Order = 2;
 		}
 
 		SMemory[] Memory = new SMemory[Main.maxPlayers];
@@ -153,7 +154,7 @@ namespace Sign_Editor
 									var text = FileTools.Load(Memory[ply].File);
 									if (!Utils.DbSetSignText(sign.x, sign.y, text))
 									{
-										TShock.Players[ply].SendErrorMessage(
+										TShock.Players[ply].PluginErrorMessage(
 											"Failed to load to InfiniteSigns sign.");
 										break;
 									}
@@ -162,24 +163,22 @@ namespace Sign_Editor
 								{
 									Sign.TextSign(signID, FileTools.Load(Memory[ply].File));
 								}
-								TShock.Players[ply].SendInfoMessage(String.Format(
-									"Loaded file '{0}' to sign.", Memory[ply].File));
+								TShock.Players[ply].PluginInfoMessage("Loaded file '{0}' to sign.", Memory[ply].File);
 								break;
 							case SignAction.SAVE:
 								if (FileTools.Save(Memory[ply].File, sign.text))
 								{
-									TShock.Players[ply].SendInfoMessage(String.Format(
-										"Saved sign's contents to file '{0}'.", Memory[ply].File));
+									TShock.Players[ply].PluginInfoMessage("Saved sign's contents to file '{0}'.", Memory[ply].File);
 								}
 								else
 								{
-									TShock.Players[ply].SendErrorMessage(
+									TShock.Players[ply].PluginErrorMessage(
 										"Failed to save to file. Check logs for details.");
 								}
 								break;
 							case SignAction.COPY:
 								Memory[ply].Clipboard = sign.text;
-								TShock.Players[ply].SendInfoMessage(
+								TShock.Players[ply].PluginInfoMessage(
 									"Copied sign's contents to clipboard.");
 								break;
 							case SignAction.PASTE:
@@ -189,7 +188,7 @@ namespace Sign_Editor
 									var text = Memory[ply].Clipboard;
 									if (!Utils.DbSetSignText(sign.x, sign.y, text))
 									{
-										TShock.Players[ply].SendErrorMessage(
+										TShock.Players[ply].PluginErrorMessage(
 											"Failed to paste to InfiniteSigns sign.");
 										break;
 									}
@@ -198,7 +197,7 @@ namespace Sign_Editor
 								{
 									Sign.TextSign(signID, Memory[ply].Clipboard);
 								}
-								TShock.Players[ply].SendInfoMessage("Pasted selection.");
+								TShock.Players[ply].PluginInfoMessage("Pasted selection.");
 								break;
 						}
 						Memory[ply].Active = Memory[ply].Action == SignAction.PERSISTENT;
@@ -228,7 +227,7 @@ namespace Sign_Editor
 			var count = args.Parameters.Count;
 			if (count == 0)
 			{
-				args.Player.SendInfoMessage(
+				args.Player.PluginInfoMessage(
 						"Usage: {0}signload <filename>. Type {0}help signload for more info.",
 						Commands.Specifier);
 			}
@@ -240,11 +239,11 @@ namespace Sign_Editor
 				var test = Path.Combine(FileTools.DirPath, Memory[i].File);
 				if (!File.Exists(test))
 				{
-					args.Player.SendErrorMessage("File doesn't exist!");
+					args.Player.PluginErrorMessage("File doesn't exist!");
 					return;
 				}
 				Memory[i].Active = true;
-				args.Player.SendInfoMessage("Loading from file. Read a sign to continue.");
+				args.Player.PluginInfoMessage("Loading from file. Read a sign to continue.");
 			}
 		}
 
@@ -253,7 +252,7 @@ namespace Sign_Editor
 			var count = args.Parameters.Count;
 			if (count == 0)
 			{
-				args.Player.SendInfoMessage(
+				args.Player.PluginInfoMessage(
 					"Usage: {0}signsave <filename>. Type {0}help signsave for more info.",
 					Commands.Specifier);
 			}
@@ -263,7 +262,7 @@ namespace Sign_Editor
 				Memory[i].Action = SignAction.SAVE;
 				Memory[i].Active = true;
 				Memory[i].File = string.Join(" ", args.Parameters);
-				args.Player.SendInfoMessage("Saving to file. Read a sign to continue.");
+				args.Player.PluginInfoMessage("Saving to file. Read a sign to continue.");
 			}
 		}
 
@@ -271,7 +270,7 @@ namespace Sign_Editor
 		{
 			Memory[args.Player.Index].Active = false;
 			Memory[args.Player.Index].Clipboard = String.Empty;
-			args.Player.SendInfoMessage("Cleared sign action and clipboard.");
+			args.Player.PluginInfoMessage("Cleared sign action and clipboard.");
 		}
 
 		void DoSignCopy(CommandArgs args)
@@ -279,7 +278,7 @@ namespace Sign_Editor
 			var i = args.Player.Index;
 			Memory[i].Action = SignAction.COPY;
 			Memory[i].Active = true;
-			args.Player.SendInfoMessage("Copying to clipboard. Read a sign to continue.");
+			args.Player.PluginInfoMessage("Copying to clipboard. Read a sign to continue.");
 		}
 
 		void DoSignPaste(CommandArgs args)
@@ -289,14 +288,14 @@ namespace Sign_Editor
 			// Clipboard Check
 			if (String.IsNullOrEmpty(Memory[i].Clipboard))
 			{
-				args.Player.SendErrorMessage("Clipboard cannot be empty!");
+				args.Player.PluginErrorMessage("Clipboard cannot be empty!");
 				return;
 			}
 			// Cancel persistent mode
 			if (Memory[i].Action == SignAction.PERSISTENT)
 			{
 				Memory[i].Active = false;
-				args.Player.SendInfoMessage("Cancelled pasting.");
+				args.Player.PluginInfoMessage("Cancelled pasting.");
 				return;
 			}
 
@@ -311,10 +310,10 @@ namespace Sign_Editor
 			{
 				Memory[i].Action = SignAction.PASTE;
 			}
-			args.Player.SendInfoMessage(
+			args.Player.PluginInfoMessage(
 				"Pasting from clipboard{0}. Read a sign to continue.", mode);
 			if (!String.IsNullOrEmpty(mode))
-				args.Player.SendInfoMessage(
+				args.Player.PluginInfoMessage(
 					"Type {0}signpaste again to cancel persistent mode.", Commands.Specifier);
 		}
 
@@ -338,7 +337,7 @@ namespace Sign_Editor
 
 		void AmIUsingIS(CommandArgs args)
 		{
-			args.Player.SendInfoMessage("UsingInfiniteSigns: {0}", UsingInfiniteSigns);
+			args.Player.PluginInfoMessage("UsingInfiniteSigns: {0}", UsingInfiniteSigns);
 		}
 	}
 }

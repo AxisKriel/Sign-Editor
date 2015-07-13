@@ -1,5 +1,6 @@
 ﻿using System;
 using TShockAPI;
+using System.Reflection;
 
 namespace Sign_Editor
 {
@@ -9,8 +10,10 @@ namespace Sign_Editor
 
 		public static string[] Info = new[]
 		{
-			String.Format("Sign Editor v{0} by Enerdy",
-				System.Reflection.Assembly.GetExecutingAssembly().GetName().Version),
+			String.Format("{0} v{1} by {2}",
+				TShock.Utils.ColorTag("Sign Editor", Color.LightGreen),
+				Assembly.GetExecutingAssembly().GetName().Version,
+				TShock.Utils.ColorTag("Enerdy", new Color(0, 127, 255))),
 			"Available commands:",
 			_cs + "signload <filename> - Loads text from target file.",
 			_cs + "signsave <filename> - Saves a sign's contents to a .txt file.",
@@ -22,7 +25,7 @@ namespace Sign_Editor
 
 		public static string[] Load = new[]
 		{
-			"Alias: {0}signload OR {0}sload".SFormat(_cs),
+			String.Format("Alias: {0}signload OR {0}sload", _cs),
 			"Parameters: <filename> - The file name. Extension is optional.",
 			"Sign Load will trigger the LOAD action." +
 			" The next sign to be read will have its contents replaced by the loaded string.",
@@ -31,7 +34,7 @@ namespace Sign_Editor
 
 		public static string[] Save = new[]
 		{
-			"Alias: {0}signsave OR {0}ssave".SFormat(_cs),
+			String.Format("Alias: {0}signsave OR {0}ssave", _cs),
 			"Parameters: <filename> - The file name. Extension is optional.",
 			"Sign Save will trigger the SAVE action." +
 			" The next sign to be read will have its contents saved under the given filename.",
@@ -40,21 +43,21 @@ namespace Sign_Editor
 
 		public static string[] Copy = new[]
 		{
-			"Alias: {0}signcopy OR {0}scopy".SFormat(_cs),
+			String.Format("Alias: {0}signcopy OR {0}scopy", _cs),
 			"Sign Copy will trigger the COPY action." +
 			" This will copy the contents from the next sign to be read to the clipboard.",
-			"You may use {0}signpaste to paste from the clipboard into a sign.".SFormat(_cs)
+			String.Format("You may use {0}signpaste to paste from the clipboard into a sign.", _cs)
 		};
 
 		public static string[] Paste = new[]
 		{
-			"Alias: {0}signpaste OR {0}spaste".SFormat(_cs),
+			String.Format("Alias: {0}signpaste OR {0}spaste", _cs),
 			"Parameters: '-p' (optional) - Triggers persistent mode.",
 			"Sign Paste will trigger the PASTE action." +
 			" This will paste from the clipboard to the next sign to be read.",
 			"With persistent mode on, you may chain paste into multiple signs until" +
-			" cancelled by typing {0}signpaste.".SFormat(_cs),
-			"You may use {0}signcopy to copy a sign's contents to the clipboard.".SFormat(_cs)
+			String.Format(" cancelled by typing {0}signpaste.", _cs),
+			String.Format("You may use {0}signcopy to copy a sign's contents to the clipboard.", _cs)
 		};
 	}
 }
