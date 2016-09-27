@@ -10,40 +10,16 @@ using TShockAPI;
 
 namespace Sign_Editor
 {
-	[ApiVersion(1, 23)]
+	[ApiVersion(1, 24)]
 	public class SignEditor : TerrariaPlugin
 	{
-		public override string Author
-		{
-			get
-			{
-				return "Enerdy";
-			}
-		}
+		public override string Author => "Enerdy";
 
-		public override string Description
-		{
-			get
-			{
-				return "Load and save sign content to text files.";
-			}
-		}
+		public override string Description => "Load and save sign content to text files.";
 
-		public override string Name
-		{
-			get
-			{
-				return "Sign Editor";
-			}
-		}
+		public override string Name => "Sign Editor";
 
-		public override Version Version
-		{
-			get
-			{
-				return System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
-			}
-		}
+		public override Version Version => System.Reflection.Assembly.GetExecutingAssembly().GetName().Version;
 
 		public SignEditor(Main game)
 			: base(game)
@@ -141,7 +117,7 @@ namespace Sign_Editor
 					int y = reader.ReadInt16();
 					int signID = Sign.ReadSign(x, y);
 
-					Sign sign = UsingInfiniteSigns ? Utils.DbGetSign((int)x, (int)y) : Main.sign[signID];
+					Sign sign = UsingInfiniteSigns ? Utils.DbGetSign(x, y) : Main.sign[signID];
 					if (sign == null)
 						TShock.Log.Debug("Utils.DbGetSign(int x, int y) returned null.");
 					else
@@ -218,7 +194,7 @@ namespace Sign_Editor
 				new PaginationTools.Settings()
 				{
 					IncludeHeader = false,
-					FooterFormat = "Type {0}sign {{0}} for more info.".SFormat(Commands.Specifier)
+					FooterFormat = $"Type {Commands.Specifier}sign {{0}} for more info."
 				});
 		}
 
@@ -300,7 +276,7 @@ namespace Sign_Editor
 			}
 
 			Memory[i].Active = true;
-			string mode = string.Empty;
+			string mode = String.Empty;
 			if (args.Parameters.Count > 0 && args.Parameters[0].StartsWith("-p"))
 			{
 				Memory[i].Action = SignAction.PERSISTENT;
@@ -337,7 +313,7 @@ namespace Sign_Editor
 
 		void AmIUsingIS(CommandArgs args)
 		{
-			args.Player.PluginInfoMessage("UsingInfiniteSigns: {0}", UsingInfiniteSigns);
+			args.Player.PluginInfoMessage($"UsingInfiniteSigns: {UsingInfiniteSigns}");
 		}
 	}
 }
