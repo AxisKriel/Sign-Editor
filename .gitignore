@@ -34,6 +34,7 @@ build/
 *.obj
 *.pch
 *.pdb
+*.mdb
 *.pgc
 *.pgd
 *.rsp
