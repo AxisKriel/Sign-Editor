@@ -10,7 +10,7 @@ using TShockAPI;
 
 namespace Sign_Editor
 {
-	[ApiVersion(1, 24)]
+	[ApiVersion(1, 25)]
 	public class SignEditor : TerrariaPlugin
 	{
 		public override string Author => "Enerdy";
