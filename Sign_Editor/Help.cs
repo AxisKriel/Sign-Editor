@@ -1,6 +1,7 @@
 ﻿using System;
 using TShockAPI;
 using System.Reflection;
+using Microsoft.Xna.Framework;
 
 namespace Sign_Editor
 {
