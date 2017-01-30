@@ -9,6 +9,7 @@ Newtonsoft.Json.dll
 *.xml
 *.suo
 *.user
+*.userprefs
 *.sln.docstates
 
 # Build results
