@@ -10,7 +10,7 @@ using TShockAPI;
 
 namespace Sign_Editor
 {
-	[ApiVersion(2, 0)]
+	[ApiVersion(2, 1)]
 	public class SignEditor : TerrariaPlugin
 	{
 		public override string Author => "Enerdy";
@@ -177,7 +177,10 @@ namespace Sign_Editor
 								break;
 						}
 						Memory[ply].Active = Memory[ply].Action == SignAction.PERSISTENT;
-						args.Handled = true;
+
+                        //Disabling this (not handling the event) lets the player read the sign without having to right-click it again.
+                        //Not sure if this would cause any issues
+						//args.Handled = true;
 					}
 				}
 			}

@@ -161,3 +161,9 @@ $RECYCLE.BIN/
 
 # Mac desktop service store files
 .DS_Store
+
+
+*.ide
+*.lock
+*.ide-shm
+*.ide-wal
