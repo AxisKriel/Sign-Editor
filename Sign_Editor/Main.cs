@@ -177,7 +177,10 @@ namespace Sign_Editor
 								break;
 						}
 						Memory[ply].Active = Memory[ply].Action == SignAction.PERSISTENT;
-						args.Handled = true;
+
+                        //Disabling this (not handling the event) lets the player read the sign without having to right-click it again.
+                        //Not sure if this would cause any issues
+						//args.Handled = true;
 					}
 				}
 			}
