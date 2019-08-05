@@ -161,7 +161,9 @@ $RECYCLE.BIN/
 
 # Mac desktop service store files
 .DS_Store
-.vs/Sign_Editor/v15/Server/sqlite3/db.lock
-.vs/Sign_Editor/v15/Server/sqlite3/storage.ide
-.vs/Sign_Editor/v15/Server/sqlite3/storage.ide-shm
-.vs/Sign_Editor/v15/Server/sqlite3/storage.ide-wal
+
+
+*.ide
+*.lock
+*.ide-shm
+*.ide-wal
